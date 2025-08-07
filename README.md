@@ -1,10 +1,12 @@
 # Quantum Sampling and Moment Estimation for Transformed Gaussian Random Fields -- Supplementary Material
 
+<p align="center">
+  <img src="images/moving_averages_reference.png"></img>&nbsp;&nbsp;&nbsp;&nbsp;<img src="images/quantum_circuit_cos_reference.png"></img>
+</p>
+
 *Matthias Deiml, Daniel Peterseim, 2025*
 
 Supplementary material to the paper
-
-![](images/moving_averages_reference.png)
 
 > We present a quantum algorithm for efficiently sampling transformed Gaussian
 > random fields on $d$-dimensional domains, based on an enhanced version of
