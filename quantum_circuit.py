@@ -57,7 +57,7 @@ def rotate_by_kernel():
     b = qk.QuantumRegister(1, name="b")
     a_overflow = qk.QuantumRegister(1, name="ao")
     a_sq = qk.QuantumRegister(6, name="as")
-    qc = qk.QuantumCircuit(dx, dy, b, a_overflow, a_sq)
+    qc = qk.QuantumCircuit(dx, dy, b, a_overflow, a_sq, name="rot")
 
     sqx = dx[:] + a_sq[0:3]
     qc.append(qc_sq, sqx)
@@ -122,7 +122,7 @@ def gaussian_random_field(pcg):
             # this variable is given by the most significant bits of each
             # coordinate. For other dx and dy the node with the offset (dx, dy)
             # is considered.
-            
+
             # Here, we first compute the index of this node into the upper bits
             # of j.
             qc.append(constant_add_or_sub(dx), j[2:4] + [a_boundary[0]])
@@ -199,7 +199,7 @@ def gaussian_random_field(pcg):
                 # If the random bit is 1, b if flipped before and after
                 # rotate_by_kernel, causing a rotation in the opposite
                 # direction.
-                 
+
             # Considerin all iteration of the loop, b has now been rotated by an
             # angle that is the summand in the quadrature corresponding to the
             # noise variable with the offset (dx, dy).
@@ -211,76 +211,79 @@ def gaussian_random_field(pcg):
     # entire quadrature. The value of the transformed random field is now
     # just the coefficient of the state where b is 1. All other registers were
     # returned to their initial state.
-    
+
     # Finally, we flip b once more so that the result correspond to the 0 state.
     # (This is standard for block encodings.)
 
     qc.x(b)
-    
     return qc
 
 
-pcg = pcg6to4(17, 3)
-
-qc_grf = gaussian_random_field(pcg)
-
-j = qk.QuantumRegister(8, name="j")
-b = qk.QuantumRegister(1, name="b")
-b1 = qk.QuantumRegister(1, name="b1")
-a_boundary = qk.QuantumRegister(2, name="ab")
-a_overflow = qk.QuantumRegister(1, name="ao")
-a_sq = qk.QuantumRegister(6, name="as")
-a_iter = qk.QuantumRegister(2, name="ai")
-
-qc = qk.QuantumCircuit(j, b, a_boundary, a_overflow, a_sq, a_iter)
-qc.h(j)
-qc.append(qc_grf, j[:] + b[:] + a_boundary[:] + a_overflow[:] + a_sq[:] + a_iter[:])
-qc.save_statevector()
-
-print("Building circuit for plot...")
-circ = qk.transpile(qc, backend)
-
-print("Simulating circuit for plot...")
-result = backend.run(circ).result()
-data = result.get_statevector().data[0 : 2**8].real
-data.shape = (16, 16)
-
-save_plot(data, "quantum_circuit_cos.png")
-
-samples = 32
-cov = 0
-
-
-for s in range(samples):
-    pcg = pcg6to4(17, 1 + s * 2)
+if __name__ == "__main__":
+    pcg = pcg6to4(17, 3)
 
     qc_grf = gaussian_random_field(pcg)
 
-    # This circuit corresponds to measuring the quantity of interest
-    # E[Z_left Z_right] as defined in Section 6.3.
+    j = qk.QuantumRegister(8, name="j")
+    b = qk.QuantumRegister(1, name="b")
+    b1 = qk.QuantumRegister(1, name="b1")
+    a_boundary = qk.QuantumRegister(2, name="ab")
+    a_overflow = qk.QuantumRegister(1, name="ao")
+    a_sq = qk.QuantumRegister(6, name="as")
+    a_iter = qk.QuantumRegister(2, name="ai")
 
-    qc = qk.QuantumCircuit(j, b, b1, a_boundary, a_overflow, a_sq, a_iter)
-
-    qc.h(j[0:3] + j[4:8])
+    qc = qk.QuantumCircuit(j, b, a_boundary, a_overflow, a_sq, a_iter)
+    qc.h(j)
     qc.append(qc_grf, j[:] + b[:] + a_boundary[:] + a_overflow[:] + a_sq[:] + a_iter[:])
-    qc.h(j[0:3] + j[4:8])
-    qc.mcx(j[:] + b[:], b1, ctrl_state=0)
-    qc.x(b1)
-    qc.h(j[0:3] + j[4:8])
-    qc.x(j[3])
-    qc.append(qc_grf, j[:] + b[:] + a_boundary[:] + a_overflow[:] + a_sq[:] + a_iter[:])
-    qc.x(j[3])
-    qc.h(j[0:3] + j[4:8])
-
     qc.save_statevector()
 
-    print(f"Building circuit for sample {s + 1}/{samples}...")
+    print("Building circuit for plot...")
     circ = qk.transpile(qc, backend)
-    print(f"Simulating circuit for sample {s + 1}/{samples}...")
+
+    print("Simulating circuit for plot...")
     result = backend.run(circ).result()
+    data = result.get_statevector().data[0 : 2**8].real
+    data.shape = (16, 16)
 
-    cov_sample = np.abs(result.get_statevector().data[0])
-    print(f"Resulting covariance: {cov_sample}")
-    cov += cov_sample
+    save_plot(data, "quantum_circuit_cos.png")
 
-print(f"Average coavariance: {cov / samples}")
+    samples = 32
+    cov = 0
+
+    for s in range(samples):
+        pcg = pcg6to4(17, 1 + s * 2)
+
+        qc_grf = gaussian_random_field(pcg)
+
+        # This circuit corresponds to measuring the quantity of interest
+        # E[Z_left Z_right] as defined in Section 6.3.
+
+        qc = qk.QuantumCircuit(j, b, b1, a_boundary, a_overflow, a_sq, a_iter)
+
+        qc.h(j[0:3] + j[4:8])
+        qc.append(
+            qc_grf, j[:] + b[:] + a_boundary[:] + a_overflow[:] + a_sq[:] + a_iter[:]
+        )
+        qc.h(j[0:3] + j[4:8])
+        qc.mcx(j[:] + b[:], b1, ctrl_state=0)
+        qc.x(b1)
+        qc.h(j[0:3] + j[4:8])
+        qc.x(j[3])
+        qc.append(
+            qc_grf, j[:] + b[:] + a_boundary[:] + a_overflow[:] + a_sq[:] + a_iter[:]
+        )
+        qc.x(j[3])
+        qc.h(j[0:3] + j[4:8])
+
+        qc.save_statevector()
+
+        print(f"Building circuit for sample {s + 1}/{samples}...")
+        circ = qk.transpile(qc, backend)
+        print(f"Simulating circuit for sample {s + 1}/{samples}...")
+        result = backend.run(circ).result()
+
+        cov_sample = np.abs(result.get_statevector().data[0])
+        print(f"Resulting covariance: {cov_sample}")
+        cov += cov_sample
+
+    print(f"Average coavariance: {cov / samples}")

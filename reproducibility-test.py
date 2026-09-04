@@ -118,6 +118,22 @@ just_sign = np.sign(prob_h_zero - prob_h_one)
 data_counts = np.reshape(cj_with_sign, (16, 16))
 save_plot(data_counts, "quantum_circuit_repro_counts.png")
 
+print("cj parts:")
+print(np.sign(result.get_statevector().data[0 : 2**8].real))
+
+print("sqrt parts:")
+print(np.sign(result.get_statevector().data[2**8 : 2**9].real))
+
+# cheating
+statevector = result.get_statevector().data
+mag = np.abs(statevector[0 : 2**8].real)  # 0-255 are |j>|0> i think
+sign = np.sign(
+    statevector[0 : 2**8].real
+    * statevector[2**8 : 2**9].real  # |j>|1> would be then in the second 256 entries
+)
+cheated_data = mag * sign
+save_plot(np.reshape(cheated_data, (16, 16)), "cheated_data.png")
+
 
 data_array = result.get_statevector().data[0 : 2**8].real
 # data.shape = (16, 16)

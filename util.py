@@ -2,7 +2,9 @@
 
 from PIL import Image
 import numpy as np
-from matplotlib.cm import get_cmap
+
+# from matplotlib.cm import get_cmap
+import matplotlib as mpl
 import cmocean
 
 image_folder = "./images/"
@@ -12,7 +14,7 @@ def save_plot(
     data,
     filename,
     max=None,
-    cm=get_cmap("cmo.balance"),
+    cm=mpl.colormaps.get_cmap("cmo.balance"),
     negative_gray=False,
     upsample=False,
 ):
