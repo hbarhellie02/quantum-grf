@@ -154,7 +154,7 @@ for i in range(2**8):
             + str(angle)
         )
         if abs(angle) > largest_angle:
-            largest_angle = angle
+            largest_angle = abs(angle)
 
 print(f"largest (absolute) angle: {largest_angle}")
 
