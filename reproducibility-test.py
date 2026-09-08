@@ -135,24 +135,28 @@ cheated_data = mag * sign
 save_plot(np.reshape(cheated_data, (16, 16)), "cheated_data.png")
 
 
-data_array = result.get_statevector().data[0 : 2**8].real
+cos_data = result.get_statevector().data[0 : 2**8].real
+sin_data = result.get_statevector().data[2**8 : 2**9].real
 # data.shape = (16, 16)
-data = np.reshape(data_array, (16, 16))
+data = np.reshape(cos_data, (16, 16))
 
 # Data analysis:
-# for i in range(2**8):
-#    if np.sign(data_array[i]) != np.sign(prob_h_zero[i] - prob_h_one[i]):
-#        print(
-#            "Sign Difference: index "
-#            + str(i)
-#            + ", values "
-#            + str(data_array[i])
-#            + ", "
-#            + str(np.sign(prob_h_zero[i] - prob_h_one[i]))
-#            + ", "
-#            + str(cj_with_sign[i])
-#        )
+largest_angle = 0.0
+for i in range(2**8):
+    if np.sign(cos_data[i]) != np.sign(prob_h_zero[i] - prob_h_one[i]):
+        angle = np.arcsin(sin_data[i])
+        print(
+            "Sign Difference: i "
+            + str(i)
+            + ", cosine: "
+            + str(cos_data[i])
+            + ", from sin: "
+            + str(angle)
+        )
+        if abs(angle) > largest_angle:
+            largest_angle = angle
 
+print(f"largest (absolute) angle: {largest_angle}")
 
 save_plot(data, "quantum_circuit_repro_statevector.png")
 
