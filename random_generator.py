@@ -218,18 +218,39 @@ def pcg6to4(m, c) -> qk.QuantumCircuit:
     return circ
 
 
+def pcg_k_to_l(k, l, m, c) -> qk.QuantumCircuit:
+    """
+    Implementation of a PCG with state size k and which outputs a l-bit random integer.
+    m and c are the parameters used in the LCG
+    """
+    n = qk.QuantumRegister(k, name="n")
+    x = qk.QuantumRegister(k, name="x")
+    a = qk.QuantumRegister(1, name="a")
+
+    circ = qk.QuantumCircuit(n, x, a, name="pcg_k_l")
+    circ.append(lcg(k, k, m, c), n[:] + x[:] + a[:])
+    circ.append(xorshift(k, k - l), x[:])
+
+    log2l = np.log2(l)
+    assert log2l == np.floor(log2l)
+    assert l + log2l <= k, f"Must have more state space for {l} data bits"
+    circ.append(CRShift(int(log2l), 1), x[:l] + x[-int(log2l) :])
+
+    return circ
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import random
 
-    b1 = 6
-    b2 = 6
+    b1 = 9
+    b2 = 9
 
     m = 17
     c = 1 + random.randint(0, 2 ** (b1 - 1) - 1) * 2
     print(c)
 
-    output_bits = 4
+    output_bits = 8
 
     assert output_bits < b1
 
@@ -243,7 +264,7 @@ if __name__ == "__main__":
 
         qcs = []
 
-        qc_pcg = pcg6to4(m, c)
+        qc_pcg = pcg_k_to_l(b1, output_bits, m, c)
 
         for i in range(2**b2):
             circ = qk.QuantumCircuit(n, x, a, out)
@@ -274,7 +295,10 @@ if __name__ == "__main__":
 
     data = sample(seed)
 
-    data.shape = (16, 16)
+    side_length = np.sqrt(output_bits * 2**b2)
+    assert side_length == np.floor(side_length)  # should be an integer
+
+    data = np.reshape(data, (int(side_length), int(side_length)), copy=False)
 
     # data = np.random.binomial(1, 0.5, size=(32, 32))
 
