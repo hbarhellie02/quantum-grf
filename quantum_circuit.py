@@ -71,33 +71,35 @@ def rotate_by_kernel():
     qc = qk.QuantumCircuit(dx, dy, b, a_overflow, a_sq, name="rot")
 
     sqx = dx[:] + a_sq[0:3]
-    qc.append(qc_sq(), sqx)
+    qc.append(qc_sq(), sqx)  # sqx = dx^2
     sqy = dy[:] + a_sq[3:6]
-    qc.append(qc_sq(), sqy)
+    qc.append(qc_sq(), sqy)  # sqy = dy^2
     qc.append(
         qk.circuit.library.DraperQFTAdder(6, kind="half"),
-        sqy + sqx + a_overflow[:],  # sqx now contains sqy+sqx
+        sqy + sqx + a_overflow[:],  # sqx = sqy+sqx
     )
     qc.append(qc_sq().inverse(), sqy)
     qc.x(a_overflow)
 
-    qc.cry(2 * p.coef[0], a_overflow, b)
+    qc.cry(p.coef[0], a_overflow, b)
 
     for i in range(6):
-        qc.mcry(2 * p.coef[1] * 2**i, [a_overflow[0], sqx[i]], b)
+        qc.mcry(
+            p.coef[1] * 2**i, [a_overflow[0], sqx[i]], b
+        )  # if (!a_ov and sqx[i]) rotate b (combined with the earlier x)
 
     sq = sqx[2:5] + a_sq[3:6]
     qc.append(qc_sq(), sq)
 
     for i in range(6):
-        qc.mcry(2 * p.coef[2] * 2 ** (i + 4), [a_overflow[0], sq[i]], b)
+        qc.mcry(p.coef[2] * 2 ** (i + 4), [a_overflow[0], sq[i]], b)
 
     qc.append(qc_sq().inverse(), sq)
-    qc.mcry(2 * p.coef[2] * 2 ** (10), [a_overflow[0], sqx[5]], b)
+    qc.mcry(p.coef[2] * 2 ** (10), [a_overflow[0], sqx[5]], b)
 
     for i in range(3):
         qc.mcry(
-            2 * p.coef[2] * 2 ** (i + 7),
+            p.coef[2] * 2 ** (i + 7),
             [a_overflow[0], sqx[5], sqx[2 + i]],
             b,
         )
@@ -180,6 +182,7 @@ def gaussian_random_field(pcg):
     a_iter = qk.QuantumRegister(2, name="ai")
 
     qc = qk.QuantumCircuit(j, b, a_boundary, a_overflow, a_sq, a_iter, name="grf")
+    qc.ry(np.pi / 2, b)
 
     # Loop over noise variables in the neighbourhood of
     # the coordinates stored in j
