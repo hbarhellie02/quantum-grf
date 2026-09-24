@@ -334,13 +334,13 @@ def gaussian_random_field(pcg):
     return qc
 
 
-def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
+def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, pcg):
     j = qk.QuantumRegister(8, name="j")
-    chunk = qk.QuantumRegister(8, name="k")
+    chunk = qk.QuantumRegister(2 * chunk_bits, name="k")
     b = qk.QuantumRegister(1, name="b")
     a_boundary = qk.QuantumRegister(2, name="ab")
     a_overflow = qk.QuantumRegister(1, name="ao")
-    a_sq = qk.QuantumRegister(14, name="as")
+    a_sq = qk.QuantumRegister(2 * chunk_bits + 6, name="as")
     a_iter = qk.QuantumRegister(2, name="ai")
 
     qc = qk.QuantumCircuit(
@@ -355,10 +355,10 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
     )
     qc.ry(np.pi / 2, b)
 
-    assert chunk_x < 16
-    assert chunk_y < 16
-    str_x = f"{chunk_x:04b}"
-    str_y = f"{chunk_y:04b}"
+    assert chunk_x < 2**chunk_bits
+    assert chunk_y < 2**chunk_bits
+    str_x = f"{chunk_x:0{chunk_bits}b}"
+    str_y = f"{chunk_y:0{chunk_bits}b}"
     for i, bit in enumerate(reversed(str_y + str_x)):
         if bit == "1":
             qc.x(chunk[i])
@@ -376,10 +376,12 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
             # Here, we first compute the index of this node into the upper bits
             # of j.
             qc.append(
-                n_constant_add_or_sub(7, dx), j[2:4] + chunk[0:4] + [a_boundary[0]]
+                n_constant_add_or_sub(chunk_bits + 3, dx),
+                j[2:4] + chunk[0:chunk_bits] + [a_boundary[0]],
             )
             qc.append(
-                n_constant_add_or_sub(7, dy), j[6:8] + chunk[4:8] + [a_boundary[1]]
+                n_constant_add_or_sub(chunk_bits + 3, dy),
+                j[6:8] + chunk[chunk_bits : 2 * chunk_bits] + [a_boundary[1]],
             )
 
             # We then iterate over the random bits used in the definition of the
@@ -390,10 +392,10 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
                 qc.append(
                     pcg,
                     j[2:4]
-                    + chunk[0:4]
+                    + chunk[0:chunk_bits]
                     + [a_boundary[0]]
                     + j[6:8]
-                    + chunk[4:8]
+                    + chunk[chunk_bits : 2 * chunk_bits]
                     + [a_boundary[1]]
                     + a_sq[:]
                     + [a_overflow[0]],
@@ -402,10 +404,10 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
                 qc.append(
                     pcg.inverse(),
                     j[2:4]
-                    + chunk[0:4]
+                    + chunk[0:chunk_bits]
                     + [a_boundary[0]]
                     + j[6:8]
-                    + chunk[4:8]
+                    + chunk[chunk_bits : 2 * chunk_bits]
                     + [a_boundary[1]]
                     + a_sq[:]
                     + [a_overflow[0]],
@@ -457,10 +459,10 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
                 qc.append(
                     pcg,
                     j[2:4]
-                    + chunk[0:4]
+                    + chunk[0:chunk_bits]
                     + [a_boundary[0]]
                     + j[6:8]
-                    + chunk[4:8]
+                    + chunk[chunk_bits : 2 * chunk_bits]
                     + [a_boundary[1]]
                     + a_sq[:]
                     + [a_overflow[0]],
@@ -469,10 +471,10 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
                 qc.append(
                     pcg.inverse(),
                     j[2:4]
-                    + chunk[0:4]
+                    + chunk[0:chunk_bits]
                     + [a_boundary[0]]
                     + j[6:8]
-                    + chunk[4:8]
+                    + chunk[chunk_bits : 2 * chunk_bits]
                     + [a_boundary[1]]
                     + a_sq[:]
                     + [a_overflow[0]],
@@ -489,12 +491,12 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, pcg):
             # noise variable with the offset (dx, dy).
 
             qc.append(
-                n_constant_add_or_sub(7, dy).inverse(),
-                j[6:8] + chunk[4:8] + [a_boundary[1]],
+                n_constant_add_or_sub(chunk_bits + 3, dy).inverse(),
+                j[6:8] + chunk[chunk_bits : 2 * chunk_bits] + [a_boundary[1]],
             )
             qc.append(
-                n_constant_add_or_sub(7, dx).inverse(),
-                j[2:4] + chunk[0:4] + [a_boundary[0]],
+                n_constant_add_or_sub(chunk_bits + 3, dx).inverse(),
+                j[2:4] + chunk[0:chunk_bits] + [a_boundary[0]],
             )
 
     # Repeating this procedure leads to a rotation by an angle that is the
@@ -682,7 +684,7 @@ if __name__ == "__main__":
 
     n = 10
 
-    qc_grf = gaussian_random_field(pcg)
+    qc_grf = n_gaussian_random_field(8, pcg)
 
     j = qk.QuantumRegister(8, name="j")
     b = qk.QuantumRegister(1, name="b")
@@ -693,6 +695,7 @@ if __name__ == "__main__":
     dy_copy = qk.QuantumRegister(3, name="dy_c")
     square1 = qk.QuantumRegister(6, name="sq1")
     square2 = qk.QuantumRegister(6, name="sq2")
+    a_sq = qk.QuantumRegister(6, name="asq")
     a_iter = qk.QuantumRegister(2, name="ai")
 
     qc = qk.QuantumCircuit(
