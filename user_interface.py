@@ -5,10 +5,53 @@ from qiskit_aer import AerSimulator
 from random_generator import pcg6to4, pcg_k_to_l
 from util import save_plot
 from quantum_circuit import gaussian_random_field, chunked_gaussian_random_field
-from reproducibility_test import probabilities_from_result
 
 
-def run_default_circuit(backend, n_shots: int, post_process=False):
+def probabilities_from_result(result):
+
+    raw_counts = result.get_counts()
+    # We filter the results where the bit |b> is zero
+    counts_b_zero = {
+        int(k.split(" ")[1], 2): v
+        for k, v in raw_counts.items()
+        if k.split(" ")[0] == "0"
+    }
+    # Similarly for one
+    counts_b_one = {
+        int(k.split(" ")[1], 2): v
+        for k, v in raw_counts.items()
+        if k.split(" ")[0] == "1"
+    }
+
+    data_b_zero = np.zeros(2**8)
+    data_b_one = np.zeros(2**8)
+    # data_b_one = np.zeros(2**8)
+    for i in range(2**8):
+        if i in counts_b_zero:
+            data_b_zero[i] = counts_b_zero[i]
+        if i in counts_b_one:
+            data_b_one[i] = counts_b_one[i]
+
+    # The (approx) probability of finding |j> with |b> = |0> or |1> respectively is then:
+    for i in range(2**8):
+        total_counts_i = data_b_one[i] + data_b_zero[i]
+        if total_counts_i != 0:
+            data_b_zero[i] /= float(total_counts_i)
+            data_b_one[i] /= float(total_counts_i)
+
+    if sum(data_b_zero + data_b_one) != 2**8:
+        print(
+            "normalization warning, total is "
+            + str(sum(data_b_zero + data_b_one))
+            + " instead of 256"
+        )
+        print(
+            "not every pixel had counts, most likely, the number of shots was too little"
+        )
+    return (data_b_zero, data_b_one)
+
+
+def run_default_circuit(backend, n_shots: int, post_process=False, pcg_params=[17, 3]):
     """
     Runs the default Deiml et al. circuit, except for the initial R_y and halving the rotation angle
     to avoid angles getting too big.
@@ -17,7 +60,7 @@ def run_default_circuit(backend, n_shots: int, post_process=False):
     By default, the raw probability will be returned.
 
     """
-    pcg = pcg6to4(17, 3)
+    pcg = pcg6to4(pcg_params[0], pcg_params[1])
     qc_grf = gaussian_random_field(pcg)
 
     j = qk.QuantumRegister(8, name="j")
@@ -62,6 +105,7 @@ def run_chunk_circuit(
     backend,
     n_shots: int,
     post_process=False,
+    pcg_params=[17, 3],
 ):
     """
     Runs the circuit for a 16x16 "chunk", given by the coordinates (`chunk_y`, `chunk_x`).
@@ -73,9 +117,9 @@ def run_chunk_circuit(
     """
     assert chunk_x < max_chunks
     assert chunk_y < max_chunks
-    chunk_bits = int(2 ** (np.ceil(np.log2(max_chunks))))
+    chunk_bits = int(np.ceil(np.log2(max_chunks)))
 
-    pcg = pcg_k_to_l(2 * chunk_bits + 6, 4, 17, 3)
+    pcg = pcg_k_to_l(2 * chunk_bits + 6, 4, pcg_params[0], pcg_params[1])
 
     qc_grf = chunked_gaussian_random_field(chunk_x, chunk_y, chunk_bits, pcg)
 
