@@ -200,14 +200,14 @@ def cgrf_stats(folder, save=False, downsample=False):
         plt.xlabel("noise values")
         plt.ylabel("probability density")
         plt.title(f"Classical GRF, $n={n}$")
-        plt.hist(data.flatten(), bins=nbins, density=True, alpha=0.5, edgecolor="black")
+        plt.hist(vals.flatten(), bins=nbins, density=True, alpha=0.5, edgecolor="black")
         plt.savefig("valhist_cgrf.png")
         plt.clf()
         plt.xlabel("angle of the gradient")
         plt.ylabel("probability density")
         plt.title(f"Classical GRF, $n={n}$")
         plt.hist(
-            np.arctan2(grad_y, grad_x).flatten(),
+            angles,
             bins=nbins,
             density=True,
             alpha=0.5,
