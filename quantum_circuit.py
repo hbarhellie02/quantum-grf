@@ -13,7 +13,7 @@ print("Finding polynomial approximation for exp(-x**2)...")
 xs = np.linspace(-8, 8, 200)
 ys = np.exp(-((xs / 4) ** 2))
 p = np.polyfit(xs, ys, 4)
-p = np.polynomial.Polynomial(p[::-2] * 0.5)
+p = np.polynomial.Polynomial(p[::-2] * 0.5 / np.sqrt(np.pi))
 
 
 # Circuit for computing the square of the lower three bits (as an unsigned integer) into the combined six.
@@ -682,37 +682,21 @@ def n_gaussian_random_field(nbits: int, m: int, c: int) -> qk.QuantumCircuit:
 if __name__ == "__main__":
     pcg = pcg6to4(17, 3)
 
-    n = 10
-
-    qc_grf = n_gaussian_random_field(8, pcg)
+    qc_grf = gaussian_random_field(pcg)
 
     j = qk.QuantumRegister(8, name="j")
     b = qk.QuantumRegister(1, name="b")
     b1 = qk.QuantumRegister(1, name="b1")
     a_boundary = qk.QuantumRegister(2, name="ab")
     a_overflow = qk.QuantumRegister(1, name="ao")
-    dx_copy = qk.QuantumRegister(3, name="dx_c")
-    dy_copy = qk.QuantumRegister(3, name="dy_c")
-    square1 = qk.QuantumRegister(6, name="sq1")
-    square2 = qk.QuantumRegister(6, name="sq2")
     a_sq = qk.QuantumRegister(6, name="asq")
     a_iter = qk.QuantumRegister(2, name="ai")
 
-    qc = qk.QuantumCircuit(
-        j, b, a_boundary, a_overflow, dx_copy, dy_copy, square1, square2, a_iter
-    )
+    qc = qk.QuantumCircuit(j, b, a_boundary, a_overflow, a_sq, a_iter)
     qc.h(j)
     qc.append(
         qc_grf,
-        j[:]
-        + b[:]
-        + a_boundary[:]
-        + a_overflow[:]
-        + dx_copy[:]
-        + dy_copy[:]
-        + square1[:]
-        + square2[:]
-        + a_iter[:],
+        j[:] + b[:] + a_boundary[:] + a_overflow[:] + a_sq[:] + a_iter[:],
     )
     qc.save_statevector()
 
@@ -721,8 +705,8 @@ if __name__ == "__main__":
 
     print("Simulating circuit for plot...")
     result = backend.run(circ).result()
-    data = result.get_statevector().data[0 : 2**n].real
-    data = np.reshape(data, (2 ** (n // 2), 2 ** (n // 2)), copy=False)
+    data = 2 * result.get_statevector().data[0 : 2**8].real - 1
+    data = np.reshape(data, (2 ** (8 // 2), 2 ** (8 // 2)), copy=False)
 
     save_plot(data, "quantum_circuit_cos.png")
 

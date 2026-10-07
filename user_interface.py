@@ -1,10 +1,34 @@
 import qiskit as qk
 import numpy as np
+import pandas as pd
+import csv
 from qiskit_aer import AerSimulator
 
 from random_generator import pcg6to4, pcg_k_to_l
 from util import save_plot
 from quantum_circuit import gaussian_random_field, chunked_gaussian_random_field
+
+
+def parse_chunk(fname, chunk_x, chunk_y):
+    d = pd.read_csv(fname)
+    str_data = d[str(chunk_x)][chunk_y]
+    return np.fromstring(
+        str_data.replace("\n", "").replace("[", "").replace("]", ""), sep=" "
+    )
+
+
+def parse_perlin_csv(path):
+    data = None
+    with open(path, "r") as f:
+        r = csv.DictReader(f)
+        numlines = sum(1 for _ in r)
+        data = np.zeros(numlines)
+        f.seek(0)
+        r = csv.DictReader(f)
+        for i, row in enumerate(r):
+            data[i] = row["out"]
+        data = np.reshape(data, (int(np.sqrt(numlines)), int(np.sqrt(numlines))))
+    return data
 
 
 def probabilities_from_result(result):

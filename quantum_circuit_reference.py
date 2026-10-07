@@ -14,13 +14,14 @@ oversampling_ref = 5
 # Number of quadrature points in each dimension for the reference field (1/h)
 N_ref = 240
 # Number of samples
-samples = 10000
+samples = 100
 # Characteristic length of the covariance
-xi = np.sqrt(1/8)
+xi = np.sqrt(1 / 8)
 
 # The total size (in each dimension) of the noise generated for the reference
 # field
 noise_size = N_ref * (2 * oversampling_ref + 1)
+
 
 def kernel(x):
     norm = np.linalg.norm(x, axis=-1)
@@ -43,9 +44,10 @@ for j in range(samples):
         print("Generating figure ...")
         save_plot(ref, "quantum_circuit_cos_reference.png")
     left = np.average(ref[N_ref // 2 :, :])
+    np.savetxt(f"quantum_circuit_cos_reference_{j}.csv", ref, delimiter=",")
     right = np.average(ref[: N_ref // 2, :])
     cov = left * right
     sum += cov
-    print(sum/(j + 1))
+    print(sum / (j + 1))
 
 print(sum / samples)
