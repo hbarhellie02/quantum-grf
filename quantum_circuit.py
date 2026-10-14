@@ -13,7 +13,7 @@ print("Finding polynomial approximation for exp(-x**2)...")
 xs = np.linspace(-8, 8, 200)
 ys = np.exp(-((xs / 4) ** 2))
 p = np.polyfit(xs, ys, 4)
-p = np.polynomial.Polynomial(p[::-2] * 0.5 / np.sqrt(np.pi))
+p = np.polynomial.Polynomial(p[::-2] * 0.5)
 
 
 # Circuit for computing the square of the lower three bits (as an unsigned integer) into the combined six.
@@ -261,7 +261,9 @@ def gaussian_random_field(pcg):
     return qc
 
 
-def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, pcg):
+def chunked_gaussian_random_field(
+    seed: int, chunk_x: int, chunk_y: int, chunk_bits: int, pcg
+):
     j = qk.QuantumRegister(8, name="j")
     chunk = qk.QuantumRegister(2 * chunk_bits, name="k")
     b = qk.QuantumRegister(1, name="b")
@@ -282,6 +284,8 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, p
     )
     qc.ry(np.pi / 2, b)
 
+    assert seed < 2 ** (2 * chunk_bits + 6)
+    str_seed = f"{seed:0{2 * chunk_bits + 6}b}"
     assert chunk_x < 2**chunk_bits
     assert chunk_y < 2**chunk_bits
     str_x = f"{chunk_x:0{chunk_bits}b}"
@@ -316,6 +320,12 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, p
             for k in range(4):
                 # The corresponding random bit is computed, and b is flipped if
                 # the bit is 1.
+
+                # load seed
+                for i, bit in enumerate(reversed(str_seed)):
+                    if bit == "1":
+                        qc.x(a_sq[i])
+
                 qc.append(
                     pcg,
                     j[2:4]
@@ -339,6 +349,11 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, p
                     + a_sq[:]
                     + [a_overflow[0]],
                 )
+
+                # unload seed
+                for i, bit in enumerate(reversed(str_seed)):
+                    if bit == "1":
+                        qc.x(a_sq[i])
 
                 # We compute the difference in x direction between the
                 # coordinates of the noise variable and the original j. This is
@@ -382,6 +397,11 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, p
                     qc.cx(j[0], j[1])
                     qc.ccx(j[0], j[1], a_iter[0], ctrl_state=0)
 
+                # load seed
+                for i, bit in enumerate(reversed(str_seed)):
+                    if bit == "1":
+                        qc.x(a_sq[i])
+
                 # And potentially flip b back
                 qc.append(
                     pcg,
@@ -406,6 +426,12 @@ def chunked_gaussian_random_field(chunk_x: int, chunk_y: int, chunk_bits: int, p
                     + a_sq[:]
                     + [a_overflow[0]],
                 )
+
+                # unload seed
+                for i, bit in enumerate(reversed(str_seed)):
+                    if bit == "1":
+                        qc.x(a_sq[i])
+
                 # The correctness of this can be checked in the following
                 # way: If the random bit is 0, then the angle of the rotation
                 # introduced by rotate_by_kernel is just the value kernel.

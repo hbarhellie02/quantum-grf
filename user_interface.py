@@ -123,6 +123,7 @@ def run_default_circuit(backend, n_shots: int, post_process=False, pcg_params=[1
 
 
 def run_chunk_circuit(
+    seed: int,
     chunk_x: int,
     chunk_y: int,
     max_chunks: int,
@@ -145,7 +146,7 @@ def run_chunk_circuit(
 
     pcg = pcg_k_to_l(2 * chunk_bits + 6, 4, pcg_params[0], pcg_params[1])
 
-    qc_grf = chunked_gaussian_random_field(chunk_x, chunk_y, chunk_bits, pcg)
+    qc_grf = chunked_gaussian_random_field(seed, chunk_x, chunk_y, chunk_bits, pcg)
 
     j = qk.QuantumRegister(8, name="j")
     k = qk.QuantumRegister(2 * chunk_bits, name="k")
