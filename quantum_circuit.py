@@ -9,7 +9,7 @@ from util import save_plot
 
 backend = AerSimulator(method="matrix_product_state")
 
-print("Finding polynomial approximation for exp(-x**2)...")
+# print("Finding polynomial approximation for exp(-x**2)...")
 xs = np.linspace(-8, 8, 200)
 ys = np.exp(-((xs / 4) ** 2))
 p = np.polyfit(xs, ys, 4)
@@ -52,26 +52,6 @@ def n_constant_add_or_sub(n, c):
     qc.append(qk.circuit.library.QFT(n, do_swaps=False).inverse(), range(n))
 
     return qc
-
-
-def n_square(n: int) -> qk.QuantumCircuit():
-    data = qk.QuantumRegister(n, name="data")
-    copy = qk.QuantumRegister(n, name="copy")
-    out = qk.QuantumRegister(2 * n, name="output")
-    c = qk.QuantumCircuit(data, copy, out, name="n_square")
-
-    for i in range(n):
-        c.cx(data[i], copy[i])
-
-    c.append(
-        qk.circuit.library.RGQFTMultiplier(n, num_result_qubits=2 * n),
-        data[:] + copy[:] + out[:],
-    )
-
-    for i in range(n):
-        c.cx(data[i], copy[i])
-    # Copy should be in the all zero state again.
-    return c
 
 
 def constant_add_or_sub(c):

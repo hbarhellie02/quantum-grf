@@ -1,25 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from scipy.interpolate import RegularGridInterpolator
-
-
-def parse_chunk(fname, chunk_x, chunk_y):
-    d = pd.read_csv(fname)
-    str_data = d[str(chunk_x)][chunk_y]
-    return np.fromstring(
-        str_data.replace("\n", "").replace("[", "").replace("]", ""), sep=" "
-    )
-
-
-def parse_attributes(fname):
-    d = pd.read_csv(fname)
-    attrs = d[:][-2:].values
-    attr_dict = {}
-    for k, v in zip(attrs[0], attrs[1]):
-        if k != float("nan"):
-            attr_dict[k] = v
-    return attr_dict
+from user_interface import parse_chunk
 
 
 def get_full_data(file, save=False):

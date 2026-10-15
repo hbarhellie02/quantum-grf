@@ -1,7 +1,7 @@
 import sys
 import pyray as pr
 import prepare_textures as prep
-from user_interface import run_entire_world
+from user_interface import run_entire_world, parse_attributes
 import numpy as np
 from qiskit_aer import AerSimulator
 
@@ -13,7 +13,7 @@ seed = None
 worldsize = None
 
 choice = input(
-    "Do you want to load (L) a file or simulate (S) fresh data? \n S/L then enter...\n"
+    "Do you want to load (L) a file or simulate (S) fresh data? \n Type S or L then enter...\n"
 )
 if choice not in ["S", "L"]:
     print("invalid choice, try again...")
@@ -24,7 +24,7 @@ if choice == "L":
     )
     try:
         prep.prepare_assets_from_file(path, 4, (1 + np.sqrt(5)) / 2)
-        attr = prep.parse_attributes(path)
+        attr = parse_attributes(path)
         seed = attr["seed"]
         worldsize = attr["max. chunks"]
     except OSError:

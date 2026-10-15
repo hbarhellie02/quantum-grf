@@ -2,10 +2,8 @@ import qiskit as qk
 import numpy as np
 import pandas as pd
 import csv
-from qiskit_aer import AerSimulator
 
 from random_generator import pcg6to4, pcg_k_to_l
-from util import save_plot
 from quantum_circuit import gaussian_random_field, chunked_gaussian_random_field
 
 
@@ -15,6 +13,16 @@ def parse_chunk(fname, chunk_x, chunk_y):
     return np.fromstring(
         str_data.replace("\n", "").replace("[", "").replace("]", ""), sep=" "
     )
+
+
+def parse_attributes(fname):
+    d = pd.read_csv(fname)
+    attrs = d[:][-2:].values
+    attr_dict = {}
+    for k, v in zip(attrs[0], attrs[1]):
+        if k != float("nan"):
+            attr_dict[k] = v
+    return attr_dict
 
 
 def parse_perlin_csv(path):
