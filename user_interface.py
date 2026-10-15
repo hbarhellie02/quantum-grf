@@ -183,3 +183,32 @@ def run_chunk_circuit(
     if post_process:
         return (p_zero - 1.0 / 2) * 2
     return p_zero
+
+
+def run_entire_world(
+    seed: int,
+    max_chunks: int,
+    backend,
+    n_shots: int,
+    pcg_params=[21, 3],
+):
+    curr_chunk = 1
+    world = np.zeros((16 * max_chunks, 16 * max_chunks))
+    for i in range(max_chunks):
+        for j in range(max_chunks):
+            print(f"simulating chunk {curr_chunk}/{max_chunks**2}...")
+            curr_chunk += 1
+            world[16 * i : 16 * (i + 1), 16 * j : 16 * (j + 1)] = np.reshape(
+                run_chunk_circuit(
+                    seed,
+                    i,
+                    j,
+                    max_chunks,
+                    backend,
+                    n_shots,
+                    post_process=True,
+                    pcg_params=pcg_params,
+                ),
+                (16, 16),
+            )
+    return world
