@@ -23,7 +23,9 @@ if choice == "L":
         "Please type the filepath then press enter...\n The file should contain 8x8 chunks\n"
     )
     try:
-        prep.prepare_assets_from_file(path, 4, (1 + np.sqrt(5)) / 2)
+        prep.prepare_assets_from_file(
+            path, 4, (1 + np.sqrt(5)) / 2, random_selection=True
+        )
         attr = parse_attributes(path)
         seed = attr["seed"]
         worldsize = attr["max. chunks"]
@@ -70,7 +72,11 @@ elif choice == "S":
             pcg_params=pcg_params,
         )
         prep.prepare_assets_from_world(
-            world, int(np.log2(worldsize)) + 1, (1 + np.sqrt(5)) / 2, save_map=True
+            world,
+            int(np.log2(worldsize)) + 1,
+            (1 + np.sqrt(5)) / 2,
+            save_map=True,
+            random_selection=True,
         )
     except ValueError:
         print("That was not a valid number or did not meet the requirements!")
