@@ -13,22 +13,23 @@ seed = None
 worldsize = None
 
 choice = input(
-    "Do you want to load (L) a file or simulate (S) fresh data? \n Type S or L then enter...\n"
+    "Do you want to load a quantum (Q) or Perlin (P) file or simulate (S) fresh data? \n Type S or L then enter...\n"
 )
-if choice not in ["S", "L"]:
+if choice not in ["S", "Q", "P"]:
     print("invalid choice, try again...")
     sys.exit(0)
-if choice == "L":
+if choice != "S":
     path = input(
         "Please type the filepath then press enter...\n The file should contain 8x8 chunks\n"
     )
     try:
         prep.prepare_assets_from_file(
-            path, 4, (1 + np.sqrt(5)) / 2, random_selection=True
+            path, 4, (1 + np.sqrt(5)) / 2, random_selection=True, perlin=(choice == "P")
         )
-        attr = parse_attributes(path)
-        seed = attr["seed"]
-        worldsize = attr["max. chunks"]
+        if choice == "Q":
+            attr = parse_attributes(path)
+            seed = attr["seed"]
+            worldsize = attr["max. chunks"]
     except OSError:
         print("that was not a valid file path!")
         sys.exit(0)
@@ -131,6 +132,8 @@ while not pr.window_should_close():
     pr.end_mode_3d()
     # pr.draw_fps(10, 10)
     msg = f"SEED: {seed}, WORLD SIZE: {worldsize}"
+    if seed is None:
+        msg = "WORLD: Perlin"
     length = pr.measure_text(msg, 24)
     pr.draw_text(msg, width - 10 - length, 10, 24, pr.DARKGREEN)
 

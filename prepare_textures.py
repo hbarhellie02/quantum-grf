@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from user_interface import parse_chunk
+from user_interface import parse_chunk, parse_perlin_csv
 
 
 def get_full_data(file, save=False):
@@ -13,6 +13,16 @@ def get_full_data(file, save=False):
             data[16 * i : 16 * (i + 1), 16 * j : 16 * (j + 1)] = np.reshape(
                 parse_chunk(file, i, j), (16, 16)
             )
+    if save:
+        plt.gray()
+        plt.imsave("heightmap.png", data)
+        plt.imsave("colors.png", data, cmap="gist_earth")
+    else:
+        return data
+
+
+def get_full_data_perlin(file, save=False):
+    data = parse_perlin_csv(file)
     if save:
         plt.gray()
         plt.imsave("heightmap.png", data)
@@ -70,15 +80,22 @@ def get_interpolated_data_from_world(
         return outd
 
 
-def prepare_assets_from_file(file, n_octaves, base_amplitude, random_selection=False):
+def prepare_assets_from_file(
+    file, n_octaves, base_amplitude, random_selection=False, perlin=False
+):
     assert n_octaves <= 4
-    data = np.zeros((128, 128))
+    data = None
+    if perlin:
+        data = np.tanh(7 * get_full_data_perlin(file))
+    else:
+        data = get_full_data(file)
+    # data = np.zeros((128, 128))
     for i in range(n_octaves):
         if i == 3:
-            data += get_full_data(file)
+            continue
         else:
-            data += base_amplitude ** (3 - i) * get_interpolated_data_from_file(
-                file,
+            data += base_amplitude ** (3 - i) * get_interpolated_data_from_world(
+                data,
                 2**i,
                 random_selection=random_selection,
                 worldsize=2 ** (n_octaves - 1),
