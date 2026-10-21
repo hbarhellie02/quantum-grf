@@ -86,7 +86,7 @@ def prepare_assets_from_file(
     assert n_octaves <= 4
     data = None
     if perlin:
-        data = np.tanh(7 * get_full_data_perlin(file))
+        data = np.tanh(6 * get_full_data_perlin(file))
     else:
         data = get_full_data(file)
     # data = np.zeros((128, 128))
