@@ -229,7 +229,7 @@ multihist(
     ax,
     [s_angles_odd[0]],
     [
-        "CGRF_d",
+        "downsampled class. GRF",
     ],
     [False],
 )
